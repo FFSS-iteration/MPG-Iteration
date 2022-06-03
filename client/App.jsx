@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import * as actions from './actions/actions.js';
-import NavContainer from './containers/NavContainer.jsx';
 import GasContainer from './containers/GasContainer.jsx';
 
 
@@ -27,8 +26,6 @@ class App extends Component{
     return (
   
         <div id="navContainer">
-          {/* <img src="client/assets/woop.png" id='background-pic'/> */}
-          {/* <NavContainer /> */}
           <GasContainer />
         </div>
         

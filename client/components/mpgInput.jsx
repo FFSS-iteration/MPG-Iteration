@@ -18,12 +18,12 @@ const MPGInput = props => {
             <input id="totalCapacity" className='formInput' type="text" placeholder={'Fuel capacity'} value = {props.totalCapacity} onChange={handlechange} ></input>
 
             <h3>Enter your origin below:</h3>
-            <input id="originCity" className='formInput' type="text" placeholder={'City'} value={props.originCity} onChange={handlechange}></input>
-            <input id="originState" className='formInput' type="text" placeholder={'State'} value={props.originState} onChange={handlechange}></input>
+            <input id="originCity" className='formInput cityForm' type="text" placeholder={'City'} value={props.originCity} onChange={handlechange}></input>
+            <input id="originState" className='formInput stateForm' type="text" placeholder={'State'} value={props.originState} onChange={handlechange}></input>
 
             <h3>Enter your destination below: </h3>
-            <input id="destinationCity" className='formInput' type="text" placeholder={'City'} value={props.destinationCity} onChange={handlechange}></input>
-            <input id="destinationState" className='formInput' type="text" placeholder={'State'} value={props.destinationState} onChange={handlechange}></input>
+            <input id="destinationCity" className='formInput cityForm' type="text" placeholder={'City'} value={props.destinationCity} onChange={handlechange}></input>
+            <input id="destinationState" className='formInput stateForm' type="text" placeholder={'State'} value={props.destinationState} onChange={handlechange}></input>
             <br/>
             <br/>
             <button id="btn" className='submitCalc' onClick={(event) => {

@@ -26,7 +26,7 @@ const reducer = (state = initialState, action) => {
       }
     }
     case types.LOAD_TRIPS_TO_STATE: {
-      const trips = [...action.payload];
+      const trips = [...action.payload] || [];
       return {
         ...state,
         trips: trips,
