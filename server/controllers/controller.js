@@ -6,6 +6,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const { now } = require("mongoose");
 const { nextTick } = require("process");
+const stateCodeMapping = require("../models/states.json")
 
 controller.parseDirections = async (req, res, next) => { };
 // distance.value given in meters 1 mile to 1609.34 meters
@@ -28,7 +29,7 @@ controller.getSteps = async (req, res, next) => {
     return next();
   } catch (err) {
     console.log("err in getSteps", err);
-    next(err);
+    return next(err);
   }
 };
 
@@ -51,12 +52,12 @@ controller.refreshPrices = async () => {
 
   try {
     // Fetch the date of the last time data was refreshed
-    let checkLastRefreshDate = await fs.readFile(
+    const checkLastRefreshDate = await fs.readFile(
       path.join(__dirname, "../models/tinyDb.json"),
       "utf-8"
     );
-    let parsedRefreshDate = JSON.parse(checkLastRefreshDate);
-    let lastUpdated = await parsedRefreshDate.lastUpdated;
+    const parsedRefreshDate = JSON.parse(checkLastRefreshDate);
+    const lastUpdated = parsedRefreshDate.lastUpdated;
 
     // Setting variables for the date on this function call and a date which represents the latest an API call can have been made previously
     const today = new Date();
@@ -71,7 +72,7 @@ controller.refreshPrices = async () => {
 
     // Validate that 3 days have passed since the last fetch so as to be respectful of the API rate limit
     // return value of -1 will represent that things are functioning, but it is not time to make another call
-    if (Date.parse(await lastUpdated) > todayLessThree)
+    if (Date.parse(lastUpdated) > todayLessThree)
       return SUCCESS_CACHED_DATA;
     else {
       gasPricesUSA = await axios.get(
@@ -85,74 +86,19 @@ controller.refreshPrices = async () => {
         }
       );
 
-      // Declare and initialize object which helps convert State name (long) from API to State name (short) which comes from front end
-      const stateConv = {
-        Alabama: "AL",
-        Alaska: "AK",
-        Arizona: "AZ",
-        Arkansas: "AR",
-        California: "CA",
-        Colorado: "CO",
-        Connecticut: "CT",
-        Delaware: "DE",
-        Florida: "FL",
-        Georgia: "GA",
-        Hawaii: "HI",
-        Idaho: "ID",
-        Illinois: "IL",
-        Indiana: "IN",
-        Iowa: "IA",
-        Kansas: "KS",
-        Kentucky: "KY",
-        Louisiana: "LA",
-        Maine: "ME",
-        Maryland: "MD",
-        Massachusetts: "MA",
-        Michigan: "MI",
-        Minnesota: "MN",
-        Mississippi: "MS",
-        Missouri: "MO",
-        Montana: "MT",
-        Nebraska: "NE",
-        Nevada: "NV",
-        "New Hampshire": "NH",
-        "New Jersey": "NJ",
-        "New Mexico": "NM",
-        "New York": "NY",
-        "North Carolina": "NC",
-        "North Dakota": "ND",
-        Ohio: "OH",
-        Oklahoma: "OK",
-        Oregon: "OR",
-        Pennsylvania: "PA",
-        "Rhode Island": "RI",
-        "South Carolina": "SC",
-        "South Dakota": "SD",
-        Tennessee: "TN",
-        Texas: "TX",
-        Utah: "UT",
-        Vermont: "VT",
-        Virginia: "VA",
-        Washington: "WA",
-        "West Virginia": "WV",
-        Wisconsin: "WI",
-        Wyoming: "WY",
-      };
-
       // Fill an object with the gasPrice API objects (with state names and gas prices) organized by 2-letter state name
-      const tmpGasPriceObj = await {};
-      for (let i = 0; i < (await gasPricesUSA.data.result.length); i++) {
+      // stateCodeMapping is an object where each property has a key of a full state name, which has a value of the corresponding 2-letter
+      for (let i = 0; i < (gasPricesUSA.data.result.length); i++) {
         stateGasPrices.stateGasPrices[
-          stateConv[await gasPricesUSA.data.result[i].name]
+          stateCodeMapping[gasPricesUSA.data.result[i].name]
         ] = gasPricesUSA.data.result[i];
-        console.log(tmpGasPriceObj);
       }
     }
 
     // write the new object with state 2-letter names and gasPrice objects to tinyDb locally on the server
-    fs.writeFile(
+    await fs.writeFile(
       path.join(__dirname, "../models/tinyDb.json"),
-      JSON.stringify(await stateGasPrices),
+      JSON.stringify(stateGasPrices),
       "utf-8"
     );
 
@@ -177,6 +123,7 @@ controller.getPrice = async (req, res, next) => {
   // API REQ: GET PRICE/GAL BASED ON STATE
   // ----> CALCULATE: DISTANCE/MPG * PRICE/GAL
 
+  // using await because refreshPrices is an async function, which returns a promise, the resolution of which we want to wait for
   const refreshGasPricesStatusCode = await controller.refreshPrices();
 
   const { mpg, originState, distance } = res.locals;
@@ -192,18 +139,18 @@ controller.getPrice = async (req, res, next) => {
     );
 
     // parse gas prices object retrieved from tinyDb
-    let gasPriceParsed = JSON.parse(await gasPriceObj);
-    let gasPrice = await gasPriceParsed.stateGasPrices[originState].gasoline;
+    let gasPriceParsed = JSON.parse(gasPriceObj);
+    let gasPrice = gasPriceParsed.stateGasPrices[originState].gasoline;
 
     // console.log('gasPrice', await gasPrice);
     // ----> CALCULATE: DISTANCE/MPG * PRICE/GAL
-    res.locals.totalPrice = (distanceNum / Number(mpg)) * (await gasPrice);
-    // console.log('totalPrice', await res.locals.totalPrice);
+    res.locals.totalPrice = (distanceNum / Number(mpg)) * (gasPrice);
+    // console.log('totalPrice', res.locals.totalPrice);
 
     return next();
   } catch (err) {
     console.log("err in getNearbyGas in getPrice controller", err);
-    next(err);
+    return next(err);
   }
 };
 
